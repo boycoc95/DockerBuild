@@ -1,0 +1,46 @@
+# Docker container build laravel container
+version: "1.0"
+services:
+  app:
+    build:
+      context: ./
+      args:
+        - NGINXUSER=${NGINXUSER:-www-data}
+        - NGINXGROUP=${NGINXGROUP:-www-data}
+      dockerfile: docker/nginx.Dockerfile
+    container_name: nginx
+    ports:
+      - "8080:8080"
+      - "443:443"
+    restart: unless-stopped
+    depends_on:
+      - php
+      - redis
+    volumes:
+      - ./:/var/www/html:delegated
+    networks:
+      - laravel
+  php:
+    build:
+      context: .
+      dockerfile: docker/php.Dockerfile
+      args:
+        - PHPUSER=${PHPUSER:-www-data}
+        - PHPGROUP=${PHPGROUP:-www-data}
+    container_name: php
+    volumes:
+      - ./:/var/www/html:delegated
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - laravel    
+  redis:
+    image: redis:alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    networks:
+      - laravel
+networks:
+  laravel:
